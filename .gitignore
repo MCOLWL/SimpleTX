@@ -1,0 +1,5 @@
+﻿Debug
+STM32G473CBTX_FLASH.ld
+STM32G473CBTX_RAM.ld
+Drivers
+.settings
