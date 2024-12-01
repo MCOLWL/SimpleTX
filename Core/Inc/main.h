@@ -60,8 +60,6 @@ extern "C" {
 
 /* USER CODE END EM */
 
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -76,8 +74,6 @@ void Error_Handler(void);
 #define RF_LOG_EN_GPIO_Port GPIOC
 #define STM_RX_MIX_EN_Pin GPIO_PIN_0
 #define STM_RX_MIX_EN_GPIO_Port GPIOA
-#define VTUNE_Pin GPIO_PIN_4
-#define VTUNE_GPIO_Port GPIOA
 #define MODULUJACY_Pin GPIO_PIN_6
 #define MODULUJACY_GPIO_Port GPIOA
 #define AM1_Pin GPIO_PIN_7

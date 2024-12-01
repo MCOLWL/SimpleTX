@@ -21,7 +21,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,13 +53,18 @@ OPAMP_HandleTypeDef hopamp5;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart3;
 
 PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
-
+uint32_t value;
+uint32_t mode;
+uint32_t frequency;
+float amplitude;
+uint16_t scaled_sinewave[100];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -80,28 +84,43 @@ static void MX_DAC2_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USB_PCD_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  if (htim == &htim2) {
-    HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
-//    HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+uint16_t sinewave[100] = {0, 4, 16, 36, 64, 100, 144, 195, 253, 319,
+                        391, 470, 555, 646, 742, 844, 950, 1061, 1176, 1294,
+                        1415, 1538, 1664, 1791, 1919, 2048, 2176, 2304, 2431, 2557,
+                        2680, 2801, 2919, 3034, 3145, 3251, 3353, 3449, 3540, 3625,
+                        3704, 3776, 3842, 3900, 3951, 3995, 4031, 4059, 4079, 4091,
+                        4095, 4091, 4079, 4059, 4031, 3995, 3951, 3900, 3842, 3776,
+                        3704, 3625, 3540, 3449, 3353, 3251, 3145, 3034, 2919, 2801,
+                        2680, 2557, 2431, 2304, 2176, 2048, 1919, 1791, 1664, 1538,
+                        1415, 1294, 1176, 1061, 950, 844, 742, 646, 555, 470,
+                        391, 319, 253, 195, 144, 100, 64, 36, 16, 4};
 
-//    if (HAL_ADC_PollForConversion(&hadc1, 15)==HAL_OK){
-//                    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, funkcjak(HAL_ADC_GetValue(&hadc1))255);
-//                    HAL_ADC_Start(&hadc1);
-//
-//                }
-  }
-//  if (htim == &htim8) {
-//      HAL_GPIO_TogglePin(STM_TX_EN_GPIO_Port, STM_TX_EN_Pin);
-//  }
+void UpdateSineWave(uint16_t *output, uint16_t *input, float amplitude)
+{
+    for (uint8_t i = 0; i < 100; i++)
+    {
+        uint32_t scaled_value = (uint32_t)(input[i] * amplitude);
+        if (scaled_value > 4095)
+            scaled_value = 4095;
+        output[i] = (uint16_t)scaled_value;
+    }
 }
+
+void microDelay (uint16_t delay)
+{
+  __HAL_TIM_SET_COUNTER(&htim5, 0);
+  while (__HAL_TIM_GET_COUNTER(&htim5) < delay);
+
+}
+
+
 /* USER CODE END 0 */
 
 /**
@@ -147,41 +166,96 @@ int main(void)
   MX_TIM1_Init();
   MX_USB_PCD_Init();
   MX_TIM2_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim2); // LEDY
-//  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-//  HAL_TIM_Base_Start_IT(&htim8); // wybieranie TX/RX
-//  HAL_TIMEx_PWMN_Start_IT(&htim8, TIM_CHANNEL_4);
 
-//  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2500);
-  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
-  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2500);
-
+HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
+HAL_DAC_Start(&hdac2, DAC_CHANNEL_1);
+HAL_TIM_Base_Start(&htim5);
+value = 2945; //1.6V
+mode = 0; //tryb_pierwszy
+frequency = 1; //10KHz
+amplitude = 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-//  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1000);
-//  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 6000);
-//	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_4, 30000);
+
   while (1)
   {
-	  HAL_Delay(5000);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 1000);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 6000);
-	HAL_Delay(5000);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1000);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 6000);
-	HAL_GPIO_TogglePin(STM_TX_EN_GPIO_Port, STM_TX_EN_Pin);
-	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-//	  HAL_Delay(500);
-//	  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
-//	  HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-//	  HAL_Delay(500);
-//	  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
-//	  HAL_Delay(500);
-//	  void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
+	  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
+	  UpdateSineWave(scaled_sinewave, sinewave, amplitude);
+	      for (uint8_t i = 0; i < 100; i++)
+	      {
+	          HAL_DAC_SetValue(&hdac2, DAC_CHANNEL_1, DAC_ALIGN_12B_R, scaled_sinewave[i]);
+	          microDelay(frequency);
+	      }
+
+	      // Obsługa przycisku BTN2 i diody LED2
+	      if (HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == GPIO_PIN_RESET)
+	      {
+	          HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET); // Włącz LED2
+	          mode++;
+	          if (mode > 2)
+	              mode = 0;
+	          HAL_Delay(300);
+	      }
+	      else
+	      {
+	          HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET); // Wyłącz LED2
+	      }
+
+	      // Tryb 0: Zwiększanie wartości DAC i zapalanie LED1
+	      if (mode == 0)
+	      {
+	          if (HAL_GPIO_ReadPin(BTN1_GPIO_Port, BTN1_Pin) == GPIO_PIN_RESET)
+	          {
+	              HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET); // Włącz LED1
+	              value += 93;
+	              if (value < 0)
+	                  value = 1850;
+	              if (value > 4095)
+	                  value = 1850;
+	              HAL_Delay(300);
+	          }
+	          else
+	          {
+	              HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); // Wyłącz LED1
+	          }
+	      }
+
+	      // Tryb 1: Zwiększanie częstotliwości i zapalanie LED1
+	      if (mode == 1)
+	      {
+	          if (HAL_GPIO_ReadPin(BTN1_GPIO_Port, BTN1_Pin) == GPIO_PIN_RESET)
+	          {
+	              HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET); // Włącz LED1
+	              frequency++;
+	              if (frequency > 5)
+	                  frequency = 1;
+	              HAL_Delay(300);
+	          }
+	          else
+	          {
+	              HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); // Wyłącz LED1
+	          }
+	      }
+
+	      // Tryb 2: ZMNIEJSZANIE amplitudy i zapalanie LED1
+	      if (mode == 2)
+	      {
+	          if (HAL_GPIO_ReadPin(BTN1_GPIO_Port, BTN1_Pin) == GPIO_PIN_RESET)
+	          {
+	              HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET); // Włącz LED1
+	              amplitude = amplitude - 0.1;
+	              if (amplitude < 0) amplitude = 1;  // Reset do minimalnej amplitudy
+	              HAL_Delay(300);
+	          }
+	          else
+	          {
+	              HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); // Wyłącz LED1
+	          }
+	      }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -205,14 +279,16 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSI48;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSI48
+                              |RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
-  RCC_OscInitStruct.PLL.PLLN = 21;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV5;
+  RCC_OscInitStruct.PLL.PLLN = 68;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
@@ -751,7 +827,6 @@ static void MX_TIM2_Init(void)
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM2_Init 1 */
 
@@ -771,28 +846,60 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
-  {
-    Error_Handler();
-  }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
-  HAL_TIM_MspPostInit(&htim2);
+
+}
+
+/**
+  * @brief TIM5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM5_Init(void)
+{
+
+  /* USER CODE BEGIN TIM5_Init 0 */
+
+  /* USER CODE END TIM5_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM5_Init 1 */
+
+  /* USER CODE END TIM5_Init 1 */
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = 169;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 4294967295;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM5_Init 2 */
+
+  /* USER CODE END TIM5_Init 2 */
 
 }
 
@@ -943,7 +1050,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, STM_RX_MIX_EN_Pin|LED1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(STM_RX_EN_GPIO_Port, STM_RX_EN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LED2_Pin|STM_RX_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : STM_TX_EN_Pin RF_LOG_EN_Pin */
   GPIO_InitStruct.Pin = STM_TX_EN_Pin|RF_LOG_EN_Pin;
@@ -964,12 +1071,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : STM_RX_MIX_EN_Pin */
-  GPIO_InitStruct.Pin = STM_RX_MIX_EN_Pin;
+  /*Configure GPIO pins : STM_RX_MIX_EN_Pin LED1_Pin */
+  GPIO_InitStruct.Pin = STM_RX_MIX_EN_Pin|LED1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(STM_RX_MIX_EN_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA1 PA2 PA3 PA5 */
   GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_5;
@@ -991,23 +1098,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(BTN2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LED1_Pin */
-  GPIO_InitStruct.Pin = LED1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LED1_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : STM_RX_EN_Pin */
-  GPIO_InitStruct.Pin = STM_RX_EN_Pin;
+  /*Configure GPIO pins : LED2_Pin STM_RX_EN_Pin */
+  GPIO_InitStruct.Pin = LED2_Pin|STM_RX_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(STM_RX_EN_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 2, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+  /*Configure GPIO pin : BTN1_Pin */
+  GPIO_InitStruct.Pin = BTN1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(BTN1_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
