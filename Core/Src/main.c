@@ -184,7 +184,6 @@ amplitude = 1;
   while (1)
   {
 	  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, value);
-	  UpdateSineWave(scaled_sinewave, sinewave, amplitude);
 	      for (uint8_t i = 0; i < 100; i++)
 	      {
 	          HAL_DAC_SetValue(&hdac2, DAC_CHANNEL_1, DAC_ALIGN_12B_R, scaled_sinewave[i]);
@@ -233,6 +232,7 @@ amplitude = 1;
 	              frequency++;
 	              if (frequency > 5)
 	                  frequency = 1;
+	        	  UpdateSineWave(scaled_sinewave, sinewave, amplitude);
 	              HAL_Delay(300);
 	          }
 	          else
@@ -249,6 +249,7 @@ amplitude = 1;
 	              HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET); // Włącz LED1
 	              amplitude = amplitude - 0.1;
 	              if (amplitude < 0) amplitude = 1;  // Reset do minimalnej amplitudy
+	        	  UpdateSineWave(scaled_sinewave, sinewave, amplitude);
 	              HAL_Delay(300);
 	          }
 	          else
